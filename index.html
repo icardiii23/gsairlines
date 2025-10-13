@@ -147,40 +147,63 @@
   <footer>UYARI: Bu site gerçek bir havayolu sitesi değildir. Real Flight Simulator oyununda kullanılmak üzere yapılmış bir sitedir.</footer>
 
   <script>
-    const table = document.getElementById("flightTable");
-    const tbody = table.querySelector("tbody");
-    const rows = Array.from(tbody.querySelectorAll("tr"));
+  const table = document.getElementById("flightTable");
+  const tbody = table.querySelector("tbody");
+  const rows = Array.from(tbody.querySelectorAll("tr"));
 
-    // Tarihe göre sırala (en eski üstte)
-    rows.sort((a, b) => {
-      const dateA = a.cells[1].innerText.split(".").reverse().join("");
-      const dateB = b.cells[1].innerText.split(".").reverse().join("");
-      return dateA.localeCompare(dateB);
-    });
+  // Tarihe göre sırala (en eski üstte) — güvenli sayısal karşılaştırma
+  rows.sort((a, b) => {
+    const dateA = a.cells[1].innerText.split(".").reverse().join(""); // "20251012"
+    const dateB = b.cells[1].innerText.split(".").reverse().join("");
+    return parseInt(dateA) - parseInt(dateB);
+  });
 
-    tbody.innerHTML = "";
-    rows.forEach(row => {
-      // 30 dakika gecikme kontrolü
-      const plan = row.cells[5].innerText;
-      const gercek = row.cells[7].innerText;
+  tbody.innerHTML = "";
 
-      if (plan && gercek) {
-        const [ph, pm] = plan.split(":").map(Number);
-        const [gh, gm] = gercek.split(":").map(Number);
-        const planMinutes = ph * 60 + pm;
-        const realMinutes = gh * 60 + gm;
+  rows.forEach(row => {
+    // --- HANGİ ZAMANA GÖRE KONTROL EDİYORUZ? ---
+    // Mevcut kod planlı/gerçek kalkışları kontrol etmek istiyorsa:
+    const planned = row.cells[4].innerText.trim(); // Planlı Kalkış (sütun index 4)
+    const actual  = row.cells[6].innerText.trim(); // Gerçek Kalkış (sütun index 6)
+    // Eğer varış bazlı kontrol isterseniz, kullanın:
+    // const planned = row.cells[5].innerText.trim(); // Planlı Varış
+    // const actual  = row.cells[7].innerText.trim(); // Gerçek İniş
 
-        if (realMinutes - planMinutes > 30) {
-          row.classList.add("delayed");
-        }
+    // Geçerli saat formatı kontrolü (HH:MM). "YOK" veya boşsa atla.
+    const isTime = t => typeof t === "string" && /^\d{1,2}:\d{2}$/.test(t);
+
+    if (isTime(planned) && isTime(actual)) {
+      const [ph, pm] = planned.split(":").map(Number);
+      const [ah, am] = actual.split(":").map(Number);
+      let planMinutes = ph * 60 + pm;
+      let actualMinutes = ah * 60 + am;
+
+      // Gece yarısı geçişlerini düzgün ele alalım:
+      // Eğer actual-plan çok büyük negatifse (ör. actual 00:03, plan 23:35) -> next day
+      let diff = actualMinutes - planMinutes;
+      if (diff < -720) { // yarım günden büyük negatifse muhtemelen actual bir sonraki gün
+        diff += 24 * 60;
       }
 
-      tbody.appendChild(row);
-    });
-  </script>
+      // Şimdi gecikme kontrolü: 30 dakikadan fazla ise delayed
+      if (diff > 30) {
+        row.classList.add("delayed");
+      } else {
+        row.classList.remove("delayed");
+      }
+    } else {
+      // Eğer zaman yoksa veya "YOK" gibi bir değer varsa, gecikme kontrolü atlanır
+      row.classList.remove("delayed");
+    }
+
+    tbody.appendChild(row);
+  });
+</script>
+
 
 </body>
 </html>
+
 
 
 
