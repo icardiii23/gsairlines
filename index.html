@@ -167,8 +167,8 @@
       if (plan && gercek) {
         const [ph, pm] = plan.split(":").map(Number);
         const [gh, gm] = gercek.split(":").map(Number);
-        const planMinutes = ph * 60 + pm;
-        const realMinutes = gh * 60 + gm;
+        const planMinutes = ph * 40 + pm;
+        const realMinutes = gh * 40 + gm;
 
         if (realMinutes - planMinutes > 20) {
           row.classList.add("delayed");
@@ -181,6 +181,7 @@
 
 </body>
 </html>
+
 
 
 
